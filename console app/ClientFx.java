@@ -14,6 +14,8 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
+
+import javafx.event.*;
 import javafx.application.Platform;
 
 import java.net.*;
@@ -23,23 +25,42 @@ import java.util.*;
 public class ClientFx extends Application {
 
     Stage window;
-    Scene userScene, chatScene;
+    Scene userScene;
+	Scene chatListScene;
+	ArrayList<Scene> chatScene;
+	ArrayList<VBox> chatLayout;
+	
+	Button chatListButton;
 	///layout1
 	Label userLabel, passLabel;
 	TextField userField, passField;
 	Button loginButton;
 	
 	///layout2
-    Button chatButton;
-	TextField chatField;
-    ListView<String> listView;
+	ArrayList<Button> backButton;
+    ArrayList<Button> chatButton;
+	ArrayList<TextField> chatField;
+    //ListView<String> listView[];
+	ArrayList< ListView<String> > listViewAra;
+	ListView<String> chatListView;
 	Client client;
 	UserInfo userInfo;
+	
+	TreeMap<String, Integer> posOfChatRoom;
+	String curRoomName;int curRoomPos;
+	
 	
 	public ClientFx()	{
 		client = new Client();
 		client.startConnection("localhost", 6666);
 		//userInfo = new UserInfo();
+		listViewAra = new ArrayList< ListView<String> >();
+		chatScene = new ArrayList<Scene>();//literal chat box
+		posOfChatRoom = new TreeMap<String, Integer>();
+		chatLayout = new ArrayList<VBox>();
+		chatField = new ArrayList<TextField>();
+		chatButton = new ArrayList<Button>();
+		backButton = new ArrayList<Button>();
 	}
 	public void stopConnection()	{
 		client.stopConnection();
@@ -68,12 +89,28 @@ public class ClientFx extends Application {
         window = primaryStage;
         window.setTitle("Chat");
 		
-		//Layout1
+		//chatListScene
+		
+		chatListView = new ListView<String>();
+		chatListButton = new Button("Enter Chat");
+		
+		VBox chatListLayout = new VBox(10);
+        chatListLayout.setPadding(new Insets(20, 20, 20, 20));
+        chatListLayout.getChildren().addAll(chatListView, chatListButton);
+		chatListScene = new Scene(chatListLayout, 400, 400);
+		chatListButton.setOnAction(e -> {
+			curRoomName = chatListView.getSelectionModel().getSelectedItem();;
+			curRoomPos = posOfChatRoom.get(curRoomName);
+			System.out.println("curRoomPos : " + curRoomPos);
+			window.setScene(chatScene.get(curRoomPos));
+		});
+		
+		//userScene
 		userLabel = new Label("Username : ");
 		passLabel = new Label("Password : ");
 		
-		userField = new TextField();
-		passField = new TextField();
+		userField = new TextField("rawn");
+		passField = new TextField("rawn");
         loginButton = new Button("Login");
 		VBox userLayout = new VBox(10);
         userLayout.setPadding(new Insets(20, 20, 20, 20));
@@ -87,27 +124,77 @@ public class ClientFx extends Application {
 		});
 		
 		
-		//Layout2
+		//chatScene
+		
+		/**
 		chatButton = new Button("Submit");
 		chatField = new TextField();
-        listView = new ListView<>();
-        //listView.getItems().addAll("Iron Man", "Titanic", "Contact", "Surrogates");
-        //listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-        //button.setOnAction(e -> buttonClicked());
 		chatButton.setOnAction(e -> {
-			System.out.println("message sent");
-			client.sendMessage(new ChatMessage(chatField.getText()));
+			System.out.println("message sending to " + curRoomName);
+			client.sendMessage(new ChatMessage(curRoomName, chatField.getText()));
 		});
         VBox chatLayout = new VBox(10);
         chatLayout.setPadding(new Insets(20, 20, 20, 20));
-        chatLayout.getChildren().addAll(listView, chatField, chatButton);
-		chatScene = new Scene(chatLayout, 500, 500);
+		for(int i = 0; i < listViewAra.size(); i++)	{
+			chatLayout.getChildren().addAll(listViewAra.get(i), chatField, chatButton);
+		}
+        */
+		//chatScene = new Scene(chatLayout, 500, 500);
         
 		
 		window.setScene(userScene);
         window.show();
     }
-
+	
+	/**
+	public String getTextFunc(TextField tf)	{
+		return tf.getText();
+	}
+	*/
+	
+	public void setUpChatRoom(ArrayList<UserSideChatRoom> userChatAra)	{
+		for(int i = 0; i < userChatAra.size(); i++)	{
+								
+			System.out.println(userChatAra.get(i).roomName + " " + userChatAra.get(i).hasAccess);
+			
+			
+			posOfChatRoom.put(userChatAra.get(i).roomName, i);
+			
+			chatButton.add(new Button("Submit"));
+			backButton.add(new Button("Back"));
+			chatField.add(new TextField());
+			
+			String roomName = userChatAra.get(i).roomName;
+			//String textToSend = chatField.get(i).getText();
+			TextField tmpTextField = chatField.get(i);
+			
+			chatButton.get(i).setOnAction(e -> {
+				//Message is sent with this button
+				System.out.println("message sending to " + roomName);
+				//final String textToSend = chatField.get(i).getText();
+				client.sendMessage(new ChatMessage(roomName, tmpTextField.getText()));
+			});
+			backButton.get(i).setOnAction(e -> {
+				window.setScene(chatListScene);
+			});
+			
+			
+			chatLayout.add(new VBox(10));
+			chatLayout.get(i).setPadding(new Insets(20, 20, 20, 20));
+			listViewAra.add(new ListView<String>());
+			chatLayout.get(i).getChildren().addAll(listViewAra.get(i), chatField.get(i), chatButton.get(i), backButton.get(i));
+			
+			chatScene.add(new Scene(chatLayout.get(i), 500, 500));
+			if(userChatAra.get(i).hasAccess == false)	{
+				continue;
+			}
+			chatListView.getItems().add(userChatAra.get(i).roomName);
+		}
+		
+		listViewAra.get(0).getItems().add("ashen admin er kaj kori");
+		listViewAra.get(2).getItems().add("ki khobor programmer");
+	}
+	
     private void buttonClicked(){
 		/**
         System.out.println(msgField.getText());
@@ -115,6 +202,7 @@ public class ClientFx extends Application {
 		*/
 		//client.sendMessage(new ChatMessage(msgField.getText()));
     }
+	
 	
 	
 	
@@ -193,7 +281,7 @@ public class ClientFx extends Application {
 					try {
 						Object obj = in.readObject();
 						if(threadStatus == 0)	{///it is in login stage
-							System.out.println("message porar jonno ready 0");
+							//System.out.println("message porar jonno ready 0");
 							//Boolean isValid = (Boolean) in.readObject();
 							Boolean isValid = (Boolean)obj; 
 							if(isValid == true)	{
@@ -201,24 +289,33 @@ public class ClientFx extends Application {
 									public void run() {
 										threadStatus = 1;
 										System.out.println("user is varified " + threadStatus);
-										window.setScene(chatScene);
+										//window.setScene(chatScene);
+										window.setScene(chatListScene);
 									}
 								});
 							}
 						}
+						else if(threadStatus == 1)	{
+							///setting up chat room list and each chat room accordin to it
+							ArrayList<UserSideChatRoom> userChatAra = (ArrayList<UserSideChatRoom>) obj;
+							setUpChatRoom(userChatAra);
+							threadStatus = 2;
+						}
 						else	{
-							System.out.println("message porar jonno ready 1");
+							//System.out.println("message porar jonno ready 1");
 							//String msg = (String) in.readObject();
-							String msg = (String) obj;
-							//System.out.println("message recieved from server");
+							ChatMessage msg = (ChatMessage) obj;
+							System.out.println("message recieved from server");
 							
 							Platform.runLater(new Runnable(){
 								public void run() {
-									listView.getItems().add(msg);
+									int pos = posOfChatRoom.get(msg.roomName);
+									System.out.println(pos + msg.message);
+									listViewAra.get( pos ).getItems().add(msg.message);
 								}
 								
 							});
-						}						
+						}
 					}
 					catch(Exception e) {
 					}

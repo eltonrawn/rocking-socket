@@ -3,8 +3,9 @@ import java.io.*;
 import java.util.*;
 
 class ChatMessage implements Serializable	{
-	String message;
-	public ChatMessage(String message)	{
+	String roomName, message;
+	public ChatMessage(String roomName, String message)	{
+		this.roomName = roomName;
 		this.message = message;
 	}
 }
