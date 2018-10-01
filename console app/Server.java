@@ -7,8 +7,11 @@ import java.util.*;
 public class Server	{
 	private ServerSocket serverSocket;
 	private ArrayList<ClientHandler> clientAra;
+	private TreeMap<String, String> userMap;///stores username and password
 	Server()	{
 		clientAra = new ArrayList<ClientHandler>();
+		userMap = new TreeMap<String, String>();
+		userMap.put("rawn", "rawn");
 	}
 	public void start(int port)	{
 		try	{
@@ -46,10 +49,12 @@ public class Server	{
 		private Socket clientSocket;
 		private ObjectOutputStream out;
 		private ObjectInputStream in;
+		private int status;
 		
 		
 		public ClientHandler(Socket socket)	{
 			this.clientSocket = socket;
+			status = 0;
 		}
 		
 		public void clearAll()	{
@@ -82,7 +87,49 @@ public class Server	{
 				out = new ObjectOutputStream(clientSocket.getOutputStream());
 				in  = new ObjectInputStream(clientSocket.getInputStream());
 				
-				ChatMessage input;
+				/**
+				if(status == 0)	{
+					UserInfo input;
+					while((input = (UserInfo)in.readObject()) != null)	{
+						System.out.println("lala" + input.userName + " " + input.password);
+					}
+				}
+				*/
+				
+				while(true)	{
+					if(status == 0)	{
+						///user verification stage
+						UserInfo input = (UserInfo)in.readObject();
+						System.out.println("lala " + input.userName + " " + input.password);
+						
+						if(userMap.get(input.userName) == null)	{
+							System.out.println("user not valid");
+							out.writeObject(false);
+							continue;
+						}
+						
+						if(userMap.get(input.userName).equals(input.password))	{
+							System.out.println("user verified");
+							out.writeObject(true);
+							status = 1;
+							//out.writeObject("welcome user");
+							continue;
+						}
+						else	{
+							System.out.println("password don't match");
+							out.writeObject(false);
+						}
+						
+					}
+					else	{
+						ChatMessage input;
+						input = (ChatMessage)in.readObject();
+						System.out.println("message received");
+						broadcast(input.message);
+					}
+				}
+				
+				/**
 				while((input = (ChatMessage)in.readObject()) != null)	{
 					if(".".equals(input.message))	{
 						
@@ -93,7 +140,10 @@ public class Server	{
 					//out.writeObject(input.message);
 					broadcast(input.message);
 				}
-				this.clearAll();
+				*/
+				
+				///this is important
+				//this.clearAll();
 			}
 			catch(Exception e)	{
 			}
@@ -101,6 +151,7 @@ public class Server	{
 		private void writeMsg(String str)	{
 			try	{
 				out.writeObject(str);
+				System.out.println("message broadcasted");
 			}
 			catch(Exception e)	{
 				

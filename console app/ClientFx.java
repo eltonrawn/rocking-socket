@@ -1,13 +1,19 @@
 import javafx.application.Application;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+/**
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.SelectionMode;
-import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
+*/
+import javafx.scene.*;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.stage.Stage;
+
 import javafx.application.Platform;
 
 import java.net.*;
@@ -17,15 +23,23 @@ import java.util.*;
 public class ClientFx extends Application {
 
     Stage window;
-    Scene scene;
-    Button button;
-	TextField msgField;
+    Scene userScene, chatScene;
+	///layout1
+	Label userLabel, passLabel;
+	TextField userField, passField;
+	Button loginButton;
+	
+	///layout2
+    Button chatButton;
+	TextField chatField;
     ListView<String> listView;
 	Client client;
+	UserInfo userInfo;
 	
 	public ClientFx()	{
 		client = new Client();
 		client.startConnection("localhost", 6666);
+		//userInfo = new UserInfo();
 	}
 	public void stopConnection()	{
 		client.stopConnection();
@@ -52,24 +66,45 @@ public class ClientFx extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         window = primaryStage;
-        window.setTitle("ListView Demo");
-        button = new Button("Submit");
+        window.setTitle("Chat");
 		
-		msgField = new TextField();
-
+		//Layout1
+		userLabel = new Label("Username : ");
+		passLabel = new Label("Password : ");
+		
+		userField = new TextField();
+		passField = new TextField();
+        loginButton = new Button("Login");
+		VBox userLayout = new VBox(10);
+        userLayout.setPadding(new Insets(20, 20, 20, 20));
+        userLayout.getChildren().addAll(userLabel, userField, passLabel, passField, loginButton);
+		userScene = new Scene(userLayout, 200, 200);
+		loginButton.setOnAction(e -> {
+			//userInfo.setUserInfo(userField.getText(), passField.getText());
+			userInfo = new UserInfo(userField.getText(), passField.getText());
+			//client.verifyUser(new UserInfo(userField.getText(), passField.getText()));
+			client.verifyUser(userInfo);
+		});
+		
+		
+		//Layout2
+		chatButton = new Button("Submit");
+		chatField = new TextField();
         listView = new ListView<>();
         //listView.getItems().addAll("Iron Man", "Titanic", "Contact", "Surrogates");
         //listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        //button.setOnAction(e -> buttonClicked());
+		chatButton.setOnAction(e -> {
+			System.out.println("message sent");
+			client.sendMessage(new ChatMessage(chatField.getText()));
+		});
+        VBox chatLayout = new VBox(10);
+        chatLayout.setPadding(new Insets(20, 20, 20, 20));
+        chatLayout.getChildren().addAll(listView, chatField, chatButton);
+		chatScene = new Scene(chatLayout, 500, 500);
+        
 		
-		
-        button.setOnAction(e -> buttonClicked());
-
-        VBox layout = new VBox(10);
-        layout.setPadding(new Insets(20, 20, 20, 20));
-        layout.getChildren().addAll(listView, msgField, button);
-
-        scene = new Scene(layout, 500, 500);
-        window.setScene(scene);
+		window.setScene(userScene);
         window.show();
     }
 
@@ -78,7 +113,7 @@ public class ClientFx extends Application {
         System.out.println(msgField.getText());
 		listView.getItems().add(msgField.getText());
 		*/
-		client.sendMessage(new ChatMessage(msgField.getText()));
+		//client.sendMessage(new ChatMessage(msgField.getText()));
     }
 	
 	
@@ -104,6 +139,16 @@ public class ClientFx extends Application {
 			
 			try	{
 				out.writeObject(msg);//sending message to server
+			}
+			catch(Exception e)	{
+				
+			}
+		}
+		
+		public void verifyUser(UserInfo user)	{
+			try	{
+				System.out.println(user.userName + " " + user.password);
+				out.writeObject(user);//sending message to server
 			}
 			catch(Exception e)	{
 				
@@ -137,18 +182,70 @@ public class ClientFx extends Application {
 		}
 		*/
 		/***************************************************************************************************************/
+		
 		class ServerListener extends Thread	{
+			private int threadStatus;
+			ServerListener()	{
+				threadStatus = 0;
+			}
 			public void run()	{
 				while(true)	{
 					try {
-						String msg = (String) in.readObject();
+						Object obj = in.readObject();
+						if(threadStatus == 0)	{///it is in login stage
+							System.out.println("message porar jonno ready 0");
+							//Boolean isValid = (Boolean) in.readObject();
+							Boolean isValid = (Boolean)obj; 
+							if(isValid == true)	{
+								Platform.runLater(new Runnable(){
+									public void run() {
+										threadStatus = 1;
+										System.out.println("user is varified " + threadStatus);
+										window.setScene(chatScene);
+									}
+								});
+							}
+						}
+						else	{
+							System.out.println("message porar jonno ready 1");
+							//String msg = (String) in.readObject();
+							String msg = (String) obj;
+							//System.out.println("message recieved from server");
+							
+							Platform.runLater(new Runnable(){
+								public void run() {
+									listView.getItems().add(msg);
+								}
+								
+							});
+						}						
+					}
+					catch(Exception e) {
+					}
+				}
+			}
+		}
+		
+		/**
+		class userVerifyListener extends Thread	{
+			boolean running = true;
+			public void run()	{
+				while(running)	{
+					try {
+						String is_verify = (String) in.readObject();
 						//System.out.println(msg);
 						
 						Platform.runLater(new Runnable(){
 							public void run() {
-								 listView.getItems().add(msg);
+								if(is_verify == 'Yes')	{
+									window.setScene(chatScene);
+									new ServerListener().start();
+									running = false;
+								}
+								else	{
+									
+								}
 							}
-							
 						});
 					}
 					catch(Exception e) {
@@ -156,6 +253,7 @@ public class ClientFx extends Application {
 				}
 			}
 		}
+		*/
 		
 		
 	}
