@@ -89,6 +89,7 @@ public class ClientFx extends Application {
         window = primaryStage;
         window.setTitle("Chat");
 		
+		window.setOnCloseRequest(e -> System.exit(0));
 		//chatListScene
 		
 		chatListView = new ListView<String>();
@@ -118,6 +119,7 @@ public class ClientFx extends Application {
 		userScene = new Scene(userLayout, 200, 200);
 		loginButton.setOnAction(e -> {
 			//userInfo.setUserInfo(userField.getText(), passField.getText());
+			
 			userInfo = new UserInfo(userField.getText(), passField.getText());
 			//client.verifyUser(new UserInfo(userField.getText(), passField.getText()));
 			client.verifyUser(userInfo);
@@ -160,6 +162,8 @@ public class ClientFx extends Application {
 			
 			posOfChatRoom.put(userChatAra.get(i).roomName, i);
 			
+			
+			
 			chatButton.add(new Button("Submit"));
 			backButton.add(new Button("Back"));
 			chatField.add(new TextField());
@@ -172,7 +176,7 @@ public class ClientFx extends Application {
 				//Message is sent with this button
 				System.out.println("message sending to " + roomName);
 				//final String textToSend = chatField.get(i).getText();
-				client.sendMessage(new ChatMessage(roomName, tmpTextField.getText()));
+				client.sendMessage(new ChatMessage(roomName, tmpTextField.getText() + "@" + userInfo.userName));
 			});
 			backButton.get(i).setOnAction(e -> {
 				window.setScene(chatListScene);
@@ -189,10 +193,18 @@ public class ClientFx extends Application {
 				continue;
 			}
 			chatListView.getItems().add(userChatAra.get(i).roomName);
+			
+			
+			for(int j = 0; j < userChatAra.get(i).chatRoomLog.size(); j++)	{
+				listViewAra.get(i).getItems().add(userChatAra.get(i).chatRoomLog.get(j));
+			}
+			//listViewAra.get(i).getItems().add("ashen admin er kaj kori");
 		}
 		
+		/**
 		listViewAra.get(0).getItems().add("ashen admin er kaj kori");
 		listViewAra.get(2).getItems().add("ki khobor programmer");
+		*/
 	}
 	
     private void buttonClicked(){
@@ -226,6 +238,7 @@ public class ClientFx extends Application {
 		public void sendMessage(ChatMessage msg)	{
 			
 			try	{
+				System.out.println("sending" + msg.message);
 				out.writeObject(msg);//sending message to server
 			}
 			catch(Exception e)	{

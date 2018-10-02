@@ -6,9 +6,11 @@ import java.util.*;
 class ChatRoom	{
 	String roomName;
 	TreeSet<String> user;///stores username which is unique
+	ArrayList<String> chatRoomLog;///stores previous chat
 	ChatRoom(String roomName)	{
 		this.roomName = roomName;
 		user = new TreeSet<String>();
+		chatRoomLog = new ArrayList<String>();
 	}
 	public void addUser(String userName)	{
 		user.add(userName);
@@ -30,7 +32,7 @@ public class Server	{
 	private TreeMap<String, String> userMap;///stores username and password
 	
 	private ArrayList<ChatRoom> chatRoomAra;///stores information for each chatroom
-	private TreeMap<String, Integer> posOfChatRoom; 
+	private TreeMap<String, Integer> posOfChatRoom;///stores position of chatroom in chatroomara
 	
 	Server()	{
 		clientAra = new ArrayList<ClientHandler>();
@@ -89,11 +91,31 @@ public class Server	{
 			
 		}
 	}
-	private void broadcast(ChatMessage msg)	{
+	private synchronized void broadcast(ChatMessage msg)	{
+		//ArrayList<Integer> remIdx = new ArrayList<Integer>();
+		int pos = posOfChatRoom.get(msg.roomName);
+		chatRoomAra.get(pos).chatRoomLog.add(msg.message);
+		
 		for(int i = 0; i < clientAra.size(); i++)	{
 			ClientHandler client = clientAra.get(i);
-			client.writeMsg(msg);
+			System.out.println("message broadcasting to " + client.user.userName);
+			if(chatRoomAra.get(pos).exists(client.user.userName))	{
+				client.writeMsg(msg);
+				/**
+				if(!client.writeMsg(msg))	{
+					//clientAra.remove(i);
+					remIdx.add(i);
+					client.threadRunning = false;
+				}
+				*/
+			}
 		}
+		/**
+		for(int i = remIdx.size() - 1; i >= 0; i--)	{
+			int idx = remIdx.get(i);
+			clientAra.remove(idx);
+		}
+		*/
 	}
 	
 	public static void main(String[] args)	{
@@ -110,10 +132,9 @@ public class Server	{
 		private ObjectInputStream in;
 		private int status;
 		
-		private String userName;
-		private String password;
+		boolean threadRunning;
 		
-		
+		UserInfo user;
 		
 		public ClientHandler(Socket socket)	{
 			this.clientSocket = socket;
@@ -132,60 +153,36 @@ public class Server	{
 		}
 		
 		public void run()	{
-			///This will be separate for each client
+			///This thread will be separate for each client
 			try	{
-				/**
-				out = new PrintWriter(clientSocket.getOutputStream(), true);
-				in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-				
-				String inputLine;
-				while((inputLine = in.readLine()) != null)	{
-					if(".".equals(inputLine))	{
-						out.println("good bye");
-						break;
-					}
-					out.println(inputLine);
-				}
-				*/
 				out = new ObjectOutputStream(clientSocket.getOutputStream());
 				in  = new ObjectInputStream(clientSocket.getInputStream());
+				threadRunning = true;
 				
-				/**
-				if(status == 0)	{
-					UserInfo input;
-					while((input = (UserInfo)in.readObject()) != null)	{
-						System.out.println("lala" + input.userName + " " + input.password);
-					}
-				}
-				*/
-				
-				while(true)	{
+				while(threadRunning)	{
 					Object obj = in.readObject();
 					if(status == 0)	{
 						///user verification stage
-						UserInfo input = (UserInfo)obj;
-						System.out.println("lala " + input.userName + " " + input.password);
+						user = (UserInfo)obj;
 						
-						if(userMap.get(input.userName) == null)	{
+						System.out.println("lala " + user.userName + " " + user.password);
+						
+						if(userMap.get(user.userName) == null)	{
 							System.out.println("user not valid");
 							out.writeObject(false);
 							continue;
 						}
 						
-						if(userMap.get(input.userName).equals(input.password))	{
+						if(userMap.get(user.userName).equals(user.password))	{
 							System.out.println("user verified");
 							out.writeObject(true);
 							status = 1;
-							
-							userName = input.userName;
-							password = input.password;
-							//out.writeObject("welcome user");
 							
 							
 							//give information about chatrooms
 							ArrayList<UserSideChatRoom> userChatAra = new ArrayList<UserSideChatRoom>();
 							for(int i = 0; i < chatRoomAra.size(); i++)	{
-								userChatAra.add(new UserSideChatRoom(chatRoomAra.get(i).roomName, chatRoomAra.get(i).exists(userName)));
+								userChatAra.add(new UserSideChatRoom(chatRoomAra.get(i).roomName, chatRoomAra.get(i).exists(user.userName), chatRoomAra.get(i).chatRoomLog));
 							}
 							for(int i = 0; i < userChatAra.size(); i++)	{
 								System.out.println(userChatAra.get(i).roomName + " " + userChatAra.get(i).hasAccess);
@@ -206,34 +203,27 @@ public class Server	{
 					}
 				}
 				
-				/**
-				while((input = (ChatMessage)in.readObject()) != null)	{
-					if(".".equals(input.message))	{
-						
-						out.writeObject("good bye");
-						break;
-					}
-					//System.out.println(input.message);
-					//out.writeObject(input.message);
-					broadcast(input.message);
-				}
-				*/
-				
 				///this is important
-				//this.clearAll();
+				this.clearAll();
 			}
 			catch(Exception e)	{
 			}
 		}
-		private void writeMsg(ChatMessage msg)	{
+		private boolean writeMsg(ChatMessage msg)	{
+			/**
+			if(!clientSocket.isConnected()) {
+				///this does not work
+				this.clearAll();
+				return false;
+			}
+			*/
 			try	{
 				out.writeObject(msg);
-				System.out.println("message broadcasted");
+				//System.out.println("message broadcasted");
 			}
 			catch(Exception e)	{
-				
 			}
-			
+			return true;
 		}
 	}
 }
