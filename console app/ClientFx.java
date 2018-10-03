@@ -1,22 +1,13 @@
-import javafx.application.Application;
-import javafx.collections.ObservableList;
-import javafx.geometry.Insets;
-/**
-import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.SelectionMode;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.VBox;
-*/
+import javafx.application.*;
+import javafx.collections.*;
+import javafx.geometry.*;
+
 import javafx.scene.*;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+
 import javafx.stage.Stage;
-
-
 import javafx.event.*;
-import javafx.application.Platform;
 
 import java.net.*;
 import java.io.*;
@@ -83,8 +74,8 @@ public class ClientFx extends Application {
 		//client.stopConnection();
 		cf.stopConnection();
     }
-
-    @Override
+	
+	
     public void start(Stage primaryStage) throws Exception {
         window = primaryStage;
         window.setTitle("Chat");
@@ -100,7 +91,7 @@ public class ClientFx extends Application {
         chatListLayout.getChildren().addAll(chatListView, chatListButton);
 		chatListScene = new Scene(chatListLayout, 400, 400);
 		chatListButton.setOnAction(e -> {
-			curRoomName = chatListView.getSelectionModel().getSelectedItem();;
+			curRoomName = chatListView.getSelectionModel().getSelectedItem();
 			curRoomPos = posOfChatRoom.get(curRoomName);
 			System.out.println("curRoomPos : " + curRoomPos);
 			window.setScene(chatScene.get(curRoomPos));
