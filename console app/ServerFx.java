@@ -40,6 +40,14 @@ public class ServerFx extends Application	{
 	Server server;
 	Stage window;
 	
+	
+	///startLayout
+	Label portLabel;
+	TextField portField;
+	Button startButton;
+	Scene startScene;
+	
+	
 	///homelayout
 	Button createUserButton;
 	Button manageRoomButton;
@@ -83,9 +91,6 @@ public class ServerFx extends Application	{
 		//createUserLayout
 		userListView = new ListView<String>();
 		
-		server = new Server();
-		server.start();
-		
 	}
 	
 	public static void main(String[] args)	{
@@ -99,6 +104,25 @@ public class ServerFx extends Application	{
         window.setTitle("Server");
 		
 		window.setOnCloseRequest(e -> System.exit(0));
+		
+		//startlayout
+		portLabel = new Label("Port");
+		portField = new TextField("6666");
+		startButton = new Button("Start");
+		
+		VBox startLayout = new VBox(10);
+        startLayout.setPadding(new Insets(20, 20, 20, 20));
+        startLayout.getChildren().addAll(portLabel, portField, startButton);
+		startScene = new Scene(startLayout, 200, 200);
+		
+		startButton.setOnAction(e -> {
+			int port = Integer.parseInt(portField.getText().replaceAll("\\s+",""));
+			server = new Server(port);
+			server.start();
+			
+			window.setScene(homeScene);
+		});
+		
 		
 		///homelayout
 		createUserButton = new Button("Create User");
@@ -198,7 +222,7 @@ public class ServerFx extends Application	{
 			window.setScene(roomScene);
 		});
 		
-		window.setScene(homeScene);
+		window.setScene(startScene);
         window.show();
 		
 	}
@@ -241,7 +265,15 @@ public class ServerFx extends Application	{
 		private ArrayList<ChatRoom> chatRoomAra;///stores information for each chatroom
 		private TreeMap<String, Integer> posOfChatRoom;///stores position of chatroom in chatroomara
 		
-		Server()	{
+		public Server(int port)	{
+			try	{
+				serverSocket = new ServerSocket(port);
+			}
+			catch(Exception e)	{
+				
+			}
+			
+			
 			clientAra = new ArrayList<ClientHandler>();
 			///inserting users and passwords
 			userMap = new TreeMap<String, String>();
@@ -327,7 +359,7 @@ public class ServerFx extends Application	{
 		
 		public void run()	{
 			try	{
-				serverSocket = new ServerSocket(6666);
+				
 				while(true)	{
 					System.out.println("Trying to accept");
 					ClientHandler ch = new ClientHandler(serverSocket.accept());

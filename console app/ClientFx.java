@@ -22,6 +22,14 @@ public class ClientFx extends Application {
 	ArrayList<VBox> chatLayout;
 	
 	Button chatListButton;
+	
+	///startLayout
+	Label ipLabel, portLabel;
+	TextField ipField, portField;
+	Button startButton;
+	Scene startScene;
+	
+	
 	///layout1
 	Label userLabel, passLabel;
 	TextField userField, passField;
@@ -42,8 +50,7 @@ public class ClientFx extends Application {
 	
 	
 	public ClientFx()	{
-		client = new Client();
-		client.startConnection("localhost", 6666);
+		
 		//userInfo = new UserInfo();
 		listViewAra = new ArrayList< ListView<String> >();
 		chatScene = new ArrayList<Scene>();//literal chat box
@@ -81,6 +88,34 @@ public class ClientFx extends Application {
         window.setTitle("Chat");
 		
 		window.setOnCloseRequest(e -> System.exit(0));
+		
+		
+		//startlayout
+		ipLabel = new Label("Server ip address");
+		portLabel = new Label("Server port");
+		ipField = new TextField("localhost");
+		portField = new TextField("6666");
+		startButton = new Button("Start");
+		
+		VBox startLayout = new VBox(10);
+        startLayout.setPadding(new Insets(20, 20, 20, 20));
+        startLayout.getChildren().addAll(ipLabel, ipField, portLabel, portField, startButton);
+		startScene = new Scene(startLayout, 200, 200);
+		
+		startButton.setOnAction(e -> {
+			String ipAdd = ipField.getText();
+			int port = Integer.parseInt(portField.getText().replaceAll("\\s+",""));
+			
+			/**
+			server = new Server(port);
+			server.start();
+			*/
+			client = new Client();
+			client.startConnection(ipAdd, port);
+			
+			window.setScene(userScene);
+		});
+		
 		//chatListScene
 		
 		chatListView = new ListView<String>();
@@ -91,10 +126,16 @@ public class ClientFx extends Application {
         chatListLayout.getChildren().addAll(chatListView, chatListButton);
 		chatListScene = new Scene(chatListLayout, 400, 400);
 		chatListButton.setOnAction(e -> {
-			curRoomName = chatListView.getSelectionModel().getSelectedItem();
-			curRoomPos = posOfChatRoom.get(curRoomName);
-			System.out.println("curRoomPos : " + curRoomPos);
-			window.setScene(chatScene.get(curRoomPos));
+			if(chatListView.getSelectionModel().getSelectedItem() == null)	{
+				
+			}
+			else	{
+				curRoomName = chatListView.getSelectionModel().getSelectedItem();
+				curRoomPos = posOfChatRoom.get(curRoomName);
+				System.out.println("curRoomPos : " + curRoomPos);
+				window.setScene(chatScene.get(curRoomPos));
+			}
+			
 		});
 		
 		//userScene
@@ -135,7 +176,7 @@ public class ClientFx extends Application {
 		//chatScene = new Scene(chatLayout, 500, 500);
         
 		
-		window.setScene(userScene);
+		window.setScene(startScene);
         window.show();
     }
 	
